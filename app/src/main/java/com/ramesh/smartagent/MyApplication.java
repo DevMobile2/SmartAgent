@@ -3,9 +3,11 @@ package com.ramesh.smartagent;
 import android.app.Activity;
 import android.app.Application;
 
+import com.evernote.android.job.JobManager;
 import com.ramesh.smartagent.Utils.UtilsServer;
 import com.ramesh.smartagent.retrofit.GsonStringConverterFactory;
 import com.ramesh.smartagent.retrofit.SmartAgentService;
+import com.ramesh.smartagent.services.FetchJobCreator;
 import com.squareup.okhttp.Interceptor;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
@@ -25,6 +27,13 @@ public class MyApplication extends Application{
     private static OkHttpClient httpClient= new OkHttpClient();;
     private static Activity mCurrentActivity = null;
     private static SmartAgentService service;
+
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        JobManager.create(this).addJobCreator(new FetchJobCreator());
+    }
 
     /**
      * returns Retrofit instance.

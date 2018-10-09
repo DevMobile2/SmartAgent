@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">SmartAgent</string>
     <string name="error_something_went_wrong">Something went wrong.</string>
+    <string name="welcome_to_smartagent">Welcome to SmartAgent</string>
 </resources>

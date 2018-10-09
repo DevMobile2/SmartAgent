@@ -31,7 +31,8 @@ public class SQLiteDatabaseHandler extends SQLiteOpenHelper {
         this.onCreate(sqLiteDatabase);
     }
 
-    public void addConfig(Dependency dependency) {
+    public long addConfig(Dependency dependency) {
+        long flag;
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put("id", dependency.getId());
@@ -40,7 +41,8 @@ public class SQLiteDatabaseHandler extends SQLiteOpenHelper {
         values.put("sizeInBytes",dependency.getSizeInBytes());
         values.put("cdn_path",dependency.getCdn_path());
         // insert
-        db.insert(TABLE_NAME,null, values);
+        flag= db.insert(TABLE_NAME,null, values);
         db.close();
+        return flag;
     }
 }

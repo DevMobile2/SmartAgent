@@ -20,6 +20,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Calendar;
 
 import retrofit.Call;
@@ -28,12 +29,14 @@ import retrofit.Response;
 import retrofit.Retrofit;
 
 public class Utils {
-    private static SQLiteDatabaseHandler db;
     static Context app_context;
-    private  static  String TAG="DOWNLOADING";
+    private static SQLiteDatabaseHandler db;
+    private static String TAG = "DOWNLOADING";
+    private static ArrayList<String> fileNames = new ArrayList<>();
+    private static ArrayList<Long> fileSizes = new ArrayList<>();
 
     public static void showErrorAlert(Activity mActivity, String message) {
-        Toast.makeText(mActivity,message , Toast.LENGTH_SHORT).show();
+        Toast.makeText(mActivity, message, Toast.LENGTH_SHORT).show();
     }
 
     /**
@@ -41,7 +44,7 @@ public class Utils {
      */
     public static void fetchConfig(Context context) {
         db = new SQLiteDatabaseHandler(context);
-        app_context=context;
+        app_context = context;
         Call<ResponseBody> call = MyApplication.getSerivce().fetchConfig();
         call.enqueue(new Callback<ResponseBody>() {
             @Override
@@ -73,52 +76,60 @@ public class Utils {
 
     /**
      * save config data in local database
+     *
      * @param configPojo
      */
     public static void saveConfigsInDatabase(ConfigPojo configPojo) {
         for (Dependency dependency : configPojo.getDependencies()) {
             if (db != null) {
-               long flag= db.addConfig(dependency);
-               if(flag>0){
-                   downloadFilesFromConfig(configPojo);
-               }
+                long flag = db.addConfig(dependency);
+                if (flag > 0) {
+                    readFilesFromLocalStorage();
+                    downloadFilesFromConfig(configPojo);
+                }
             }
         }
     }
 
     /**
      * Download file from server
+     *
      * @param configPojo
      */
     private static void downloadFilesFromConfig(ConfigPojo configPojo) {
-        for(final Dependency dependency:configPojo.getDependencies()){
-            Call<ResponseBody> call = MyApplication.getSerivce().downloadFileWithDynamicUrlSync(dependency.getCdn_path());
+        for (final Dependency dependency : configPojo.getDependencies()) {
+            if (!fileNames.contains(dependency.getName()) && !fileSizes.contains(dependency.getSizeInBytes())) {
+                Call<ResponseBody> call = MyApplication.getSerivce().downloadFileWithDynamicUrlSync(dependency.getCdn_path());
 
-            call.enqueue(new Callback<ResponseBody>() {
-                @Override
-                public void onResponse(Response<ResponseBody> response, Retrofit retrofit) {
+                call.enqueue(new Callback<ResponseBody>() {
+                    @Override
+                    public void onResponse(Response<ResponseBody> response, Retrofit retrofit) {
 
-                    if (response.isSuccess()) {
-                        Log.d(TAG, "server contacted and has file");
+                        if (response.isSuccess()) {
+                            Log.d(TAG, "server contacted and has file");
 
-                        boolean writtenToDisk = writeResponseBodyToDisk(response.body(),dependency);
+                            boolean writtenToDisk = writeResponseBodyToDisk(response.body(), dependency);
 
-                        Log.d(TAG, "file download was a success? " + writtenToDisk);
-                    } else {
-                        Log.d(TAG, "server contact failed");
+                            Log.d(TAG, "file download was a success? " + writtenToDisk);
+                        } else {
+                            Log.d(TAG, "server contact failed");
+                        }
                     }
-                }
 
-                @Override
-                public void onFailure(Throwable t) {
+                    @Override
+                    public void onFailure(Throwable t) {
 
-                }
-            });
+                    }
+                });
+            } else {
+                Log.i(TAG, "File already exists.");
+            }
         }
     }
 
     /**
-     *save the downloaded file into local storage
+     * save the downloaded file into local storage
+     *
      * @param body
      * @param dependency
      * @return
@@ -126,7 +137,7 @@ public class Utils {
     private static boolean writeResponseBodyToDisk(ResponseBody body, Dependency dependency) {
         try {
             // todo change the file location/name according to your needs
-            File futureStudioIconFile = new File(app_context.getExternalFilesDir(null) + File.separator + getTimeStamp()+dependency.getName());
+            File futureStudioIconFile = new File(app_context.getExternalFilesDir("resources"), dependency.getName());
 
             InputStream inputStream = null;
             OutputStream outputStream = null;
@@ -174,9 +185,28 @@ public class Utils {
 
     /**
      * returns cuttent timestamp
+     *
      * @return
      */
-    public static String getTimeStamp(){
-        return String.valueOf(Calendar.getInstance().getTimeInMillis()+"_");
+    public static String getTimeStamp() {
+        return String.valueOf(Calendar.getInstance().getTimeInMillis() + "_");
+    }
+
+
+    /**
+     * Read files from device storage
+     */
+    public static void readFilesFromLocalStorage() {
+        String path = app_context.getExternalFilesDir("resources").toString();
+        File directory = new File(path);
+        if (directory != null) {
+            File[] files = directory.listFiles();
+            for (int i = 0; i < files.length; i++) {
+                fileNames.add(files[i].getName());
+                fileSizes.add(files[i].length());
+
+            }
+        }
+
     }
 }

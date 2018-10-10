@@ -11,19 +11,16 @@ import android.util.Log;
 
 import com.ramesh.smartagent.Utils.Utils;
 import com.ramesh.smartagent.services.FetchConfigSyncJob;
-import com.ramesh.smartagent.sqlite.SQLiteDatabaseHandler;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
-    private SQLiteDatabaseHandler db;
 
     @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        db = new SQLiteDatabaseHandler(this);
         if (isStoragePermissionGranted()) {
             Utils.fetchConfig(this);
             //fetch configs from server periodically in the background.
